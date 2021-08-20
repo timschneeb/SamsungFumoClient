@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <RootNamespace>ThePBone.WbXml2</RootNamespace>
+    </PropertyGroup>
+
+    <Import Project="Native/Native.targets" />
+</Project>

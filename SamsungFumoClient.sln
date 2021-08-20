@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamsungFumoClient", "SamsungFumoClient\SamsungFumoClient.csproj", "{218F77CE-97C1-4B94-A38A-736331C1C6E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThePBone.WbXml2", "ThePBone.WbXml2\ThePBone.WbXml2.csproj", "{BAC27C93-6AD9-4A5D-99A2-2C4F7E4E3240}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoClient", "DemoClient\DemoClient.csproj", "{CF45D7C6-80E7-4C99-8B7E-C13844889804}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{218F77CE-97C1-4B94-A38A-736331C1C6E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{218F77CE-97C1-4B94-A38A-736331C1C6E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{218F77CE-97C1-4B94-A38A-736331C1C6E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{218F77CE-97C1-4B94-A38A-736331C1C6E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAC27C93-6AD9-4A5D-99A2-2C4F7E4E3240}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAC27C93-6AD9-4A5D-99A2-2C4F7E4E3240}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAC27C93-6AD9-4A5D-99A2-2C4F7E4E3240}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAC27C93-6AD9-4A5D-99A2-2C4F7E4E3240}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF45D7C6-80E7-4C99-8B7E-C13844889804}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF45D7C6-80E7-4C99-8B7E-C13844889804}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF45D7C6-80E7-4C99-8B7E-C13844889804}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF45D7C6-80E7-4C99-8B7E-C13844889804}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
