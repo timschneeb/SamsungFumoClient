@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Xml;
+using SamsungFumoClient.Exceptions;
 using SamsungFumoClient.Network;
 using SamsungFumoClient.Secure;
 using SamsungFumoClient.SyncML;
@@ -65,13 +69,138 @@ namespace SamsungFumoClient
             syncMlWriter.EndDocument();
 
             var responseBinary = await _client.SendWbxmlAsync(ServerUrl, syncMlWriter.GetBytes());
-
-            SyncDocument responseDocument;
-            responseDocument = new SyncMlParser(responseBinary).Parse();
+            var responseDocument = new SyncMlParser(responseBinary).Parse();
             ProcessServerResponse(responseDocument);
             _lastResponse = responseDocument;
 
             return responseDocument;
+        }
+
+        public async Task<FirmwareObject?> RetrieveFirmwareObject(string descriptorUri)
+        {
+            var xml = await _client.GetDownloadDescriptorAsync(descriptorUri);
+            if (xml == null)
+            {
+                return null;
+            }
+ 
+            var doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            XmlNode? mediaNode = null;
+            foreach (XmlNode node in doc.ChildNodes)
+            {
+                if (node.Name == "media")
+                {
+                    mediaNode = node;
+                }
+            }
+                
+            if (mediaNode == null)
+            {
+                Log.E("DmSession.RetrieveFirmwareObject: Xml node /media not found in server response");
+                return null;
+            }
+
+            var size = 0;
+            string description = "No description included";
+            string? uri = null;
+            string? installParam = null;
+            foreach (XmlNode child in mediaNode.ChildNodes)
+            {
+                switch (child.Name)
+                {
+                    case "description":
+                        description = child.InnerText;
+                        break;
+                    case "size":
+                        size = int.Parse(child.InnerText);
+                        break;
+                    case "objectURI":
+                        uri = child.InnerText;
+                        break;
+                    case "installParam":
+                        installParam = child.InnerText;
+                        break;
+                }
+            }
+
+            if (uri == null)
+            {
+                Log.E("DmSession.RetrieveFirmwareObject: ObjectUri is null");
+                return null;
+            }
+            if (installParam == null)
+            {
+                Log.E("DmSession.RetrieveFirmwareObject: InstallParam is null");
+                return null;
+            }
+
+            string? md5 = null;
+            string? updateVersions = null;
+            string? securityPatchVersion = null;
+            foreach (var param in installParam.Split(';'))
+            {
+                var pair = param.Split('=');
+                if (pair.Length != 2)
+                {
+                    Log.W($"DmSession.RetrieveFirmwareObject: Invalid InstallParam pair " +
+                          $"(length is {pair.Length.ToString()} instead of 2)");
+                    continue;
+                }
+
+                switch (pair[0])
+                {
+                    case "MD5":
+                        md5 = string.IsNullOrWhiteSpace(pair[1]) ? null : pair[1];
+                        break; 
+                    case "updateFwV":
+                        updateVersions = string.IsNullOrWhiteSpace(pair[1]) ? null : pair[1];
+                        break;
+                    case "securityPatchVersion":
+                        securityPatchVersion = string.IsNullOrWhiteSpace(pair[1]) ? null : pair[1];
+                        break;
+                }
+            }
+
+            var versions = updateVersions?.Split('/', StringSplitOptions.TrimEntries);
+            if (updateVersions == null || versions == null || versions.Length < 1)
+            {
+                Log.E("DmSession.RetrieveFirmwareObject: updateVersion is null");
+                return null;
+            }
+
+            string apVersion = string.Empty;
+            string? cpVersion = null;
+            string? cscVersion = null;
+            for (var index = 0; index < versions.Length; index++)
+            {
+                switch (index)
+                {
+                    case 0:
+                        apVersion = versions[index];
+                        continue; 
+                    case 1:
+                        cpVersion = versions[index];
+                        continue; 
+                    case 2:
+                        cscVersion = versions[index];
+                        continue;
+                }
+            }
+
+            return new FirmwareObject()
+            {
+                Description = description,
+                Size = size,
+                Uri = uri,
+                Md5 = md5,
+                SecurityPatchVersion = securityPatchVersion,
+                Version = new FirmwareVersion(
+                    apVersion, 
+                    cpVersion, 
+                    cscVersion)
+            };
         }
 
         public Cmd BuildAuthenticationStatus(int cmdId = 1)
@@ -90,7 +219,38 @@ namespace SamsungFumoClient
             };
         }
 
-        public SyncHdr BuildHeader()
+        private void ProcessServerResponse(SyncDocument document)
+        {
+            // Find challenge section
+            foreach (var cmd in document.SyncBody?.Cmds ?? Array.Empty<Cmd>())
+            {
+                if (cmd is Status status)
+                {
+                    if (status.Chal is {Meta: {NextNonce: { } nextNonce} meta})
+                    {
+                        if (meta.Type != "syncml:auth-md5" || meta.Format != "b64")
+                        {
+                            Log.W("DmSession: Challenge object uses an unsupported type or format");
+                            continue;
+                        }
+
+                        _serverNonce = Base64.Decode(nextNonce);
+                    }
+                }
+            }
+
+            IsAborted = SyncMlUtils.HasServerAborted(document?.SyncBody?.Cmds);
+            if (IsAborted)
+            {
+                Log.E("The server has aborted the session. No more messages must be sent.");
+                return;
+            }
+
+            ServerUrl = document?.SyncHdr?.RespURI ?? ServerUrl;
+            CurrentMessageId++;
+        }
+
+        private SyncHdr BuildHeader()
         {
             Cred? cred = null;
             if (_lastResponse == null || !SyncMlUtils.IsAuthorizationAccepted(_lastResponse?.SyncBody?.Cmds))
@@ -126,37 +286,6 @@ namespace SamsungFumoClient
                     MaxObjSize = 1048576
                 }
             };
-        }
-
-        public void ProcessServerResponse(SyncDocument document)
-        {
-            // Find challenge section
-            foreach (var cmd in document.SyncBody?.Cmds ?? Array.Empty<Cmd>())
-            {
-                if (cmd is Status status)
-                {
-                    if (status.Chal is {Meta: {NextNonce: { } nextNonce} meta})
-                    {
-                        if (meta.Type != "syncml:auth-md5" || meta.Format != "b64")
-                        {
-                            Log.W("DmSession: Challenge object uses an unsupported type or format");
-                            continue;
-                        }
-
-                        _serverNonce = Base64.Decode(nextNonce);
-                    }
-                }
-            }
-
-            IsAborted = SyncMlUtils.HasServerAborted(document?.SyncBody?.Cmds);
-            if (IsAborted)
-            {
-                Log.E("The server has aborted the session. No more messages must be sent.");
-                return;
-            }
-
-            ServerUrl = document?.SyncHdr?.RespURI ?? ServerUrl;
-            CurrentMessageId++;
         }
 
         private string? GenerateAuthDigest()

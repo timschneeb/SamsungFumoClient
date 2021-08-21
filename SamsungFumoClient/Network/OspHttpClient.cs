@@ -4,6 +4,7 @@ using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using SamsungFumoClient.Exceptions;
 using SamsungFumoClient.Secure;
 using SamsungFumoClient.Utils;
 using ThePBone.WbXml2;
@@ -84,7 +85,7 @@ namespace SamsungFumoClient.Network
                     return false;
                 }
 
-                throw new NetworkInformationException((int) result.StatusCode);
+                throw new HttpException((int)result.StatusCode);
             }
 
             Log.V(response);
@@ -126,7 +127,8 @@ namespace SamsungFumoClient.Network
             if (!result.IsSuccessStatusCode)
             {
                 Log.E(result.ToString());
-                throw new NetworkInformationException((int) result.StatusCode);
+
+                throw new HttpException((int)result.StatusCode);
             }
         
 #if HasWbXml2
@@ -137,5 +139,32 @@ namespace SamsungFumoClient.Network
 #endif
             return response;
         }
+        
+        public async Task<string?> GetDownloadDescriptorAsync(string uri)
+        {
+            Log.V(">>> OspHttpClient.GetDownloadDescriptorAsync(uri) ==========");
+            Log.V(uri);
+
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+            httpRequestMessage.Headers.Add("Accept", "application/vnd.oma.dd+xml");
+            httpRequestMessage.Headers.TryAddWithoutValidation("User-Agent",
+                $"Samsung {Device?.Model} SyncML_DM Client");
+            
+            var result = await _client.SendAsync(httpRequestMessage);
+            var response = await result.Content.ReadAsStringAsync();
+
+            Log.V("<<< Server responded to OspHttpClient.GetDownloadDescriptorAsync(uri) ==========");
+            if (!result.IsSuccessStatusCode)
+            {
+                Log.E(result.ToString());
+
+                Log.E("OspHttpClient.GetDownloadDescriptorAsync: Invalid or expired download descriptor URI");
+                return null;
+            }
+
+            Log.V(response);
+            return response;
+        }
+
     }
 }

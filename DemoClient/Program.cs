@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SamsungFumoClient;
+using SamsungFumoClient.Exceptions;
 using SamsungFumoClient.SyncML;
 using SamsungFumoClient.SyncML.Commands;
 using SamsungFumoClient.SyncML.Elements;
@@ -15,8 +16,8 @@ namespace DemoClient
         {
             var device = new Device
             {
-                Model = "SM-G950F",
-                CustomerCode = "DBT",
+                Model = "SM-R190",
+                CustomerCode = "KOO",
             };
 
             var session = new DmSession(device);
@@ -63,9 +64,9 @@ namespace DemoClient
             };
 
             // Initiate authentication handshakes by solving challenge objects
-            SyncDocument initialRequest;
+            SyncDocument? initialRequest = null;
             var attempt = 0;
-            var maxAttempt = 3;
+            const int maxAttempt = 5;
             do
             {
                 if (attempt >= maxAttempt)
@@ -76,13 +77,21 @@ namespace DemoClient
 
                 attempt++;
                 Log.I($"Authenticating with server ({attempt}/{maxAttempt} transactions)");
-                initialRequest = await session.SendAsync(body);
+                try
+                {
+                    initialRequest = await session.SendAsync(body);
+                }
+                catch (HttpException ex)
+                {
+                    Log.I($"Failed to authenticate. Server returned error {ex}");
+                }
+
                 if (session.IsAborted)
                 {
-                    Log.I("Server has aborted the connection. Closing session.");
+                    Log.E("Server has aborted the connection. Closing session.");
                     return;
                 }
-            } while (!SyncMlUtils.IsAuthorizationAccepted(initialRequest.SyncBody?.Cmds));
+            } while (initialRequest == null || !SyncMlUtils.IsAuthorizationAccepted(initialRequest.SyncBody?.Cmds));
 
             // Check whether server is requested next information
             if (!SyncMlUtils.HasCommand<Get>(initialRequest?.SyncBody?.Cmds))
@@ -108,7 +117,7 @@ namespace DemoClient
             });
             if (session.IsAborted)
             {
-                Log.I("Server has aborted the connection. Closing session.");
+                Log.E("Server has aborted the connection. Closing session.");
                 return;
             }
 
@@ -117,14 +126,14 @@ namespace DemoClient
             switch (svcState)
             {
                 case 260:
-                    Log.I(
+                    Log.E(
                         "SvcState = 260: No update for your device configuration detected. Please change the current firmware version parameter.");
                     return;
                 case 220:
-                    Log.I("SvcState = 220: No suitable firmware version found. Please check the supplied parameters.");
+                    Log.E("SvcState = 220: No suitable firmware version found. Please check the supplied parameters.");
                     return;
                 case >= 0:
-                    Log.I($"Firmware request failed: ./FUMO/Ext/SvcState is set to {svcState.ToString()}");
+                    Log.E($"Firmware request failed: ./FUMO/Ext/SvcState is set to {svcState.ToString()}");
                     break;
             }
             
@@ -138,11 +147,19 @@ namespace DemoClient
             });
             
             // Extract firmware download URI from response if found
-            Log.I("=======> Firmware found: " +
-                  Regex.Replace(
-                      SyncMlUtils.FindItemByTargetUri<Replace>(firmwareUpdateResult, "./FUMO/DownloadAndUpdate/PkgURL")
-                          ?.Data
-                          ?.Data ?? string.Empty, @"[\s-[\p{Zs}\t]]+", ""));
+            var descriptorUri = SyncMlUtils.FindFirmwareUpdateUri(firmwareUpdateResult);
+            if (descriptorUri == null)
+            {
+                Log.E("The server did not include a download descriptor with its response. Cannot continue.");
+                return;
+            }
+            var firmware = await session.RetrieveFirmwareObject(descriptorUri);
+            if (firmware == null)
+            {
+                Log.E("Download descriptor cannot be downloaded or is unreadable. Cannot continue.");
+                return;
+            }
+            Log.I("=======> Firmware found: " + firmware.Version?.ApplicationProcessor);
 
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using SamsungFumoClient.SyncML;
 using SamsungFumoClient.SyncML.Commands;
 using SamsungFumoClient.SyncML.Elements;
@@ -189,6 +190,21 @@ namespace SamsungFumoClient.Utils
 
             return null;
         }
+        
+        public static string? FindFirmwareUpdateUri(SyncDocument? doc)
+        {
+            var uri = Regex.Replace(
+                FindItemByTargetUri<Replace>(doc, "./FUMO/DownloadAndUpdate/PkgURL")
+                    ?.Data?.Data ?? string.Empty, @"[\s-[\p{Zs}\t]]+", "");
+
+            if (string.IsNullOrWhiteSpace(uri) && Uri.IsWellFormedUriString(uri, UriKind.RelativeOrAbsolute))
+            {
+                return null;
+            }
+
+            return uri;
+        }
+
 
         public static Cmd[] BuildSuccessResponses(SyncDocument? doc,
             (string cmdType, string code)[]? responseMap = null, int cmdIdStart = 1)
