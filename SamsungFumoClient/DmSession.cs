@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Xml;
 using SamsungFumoClient.Exceptions;
@@ -9,6 +7,7 @@ using SamsungFumoClient.Secure;
 using SamsungFumoClient.SyncML;
 using SamsungFumoClient.SyncML.Commands;
 using SamsungFumoClient.SyncML.Elements;
+using SamsungFumoClient.SyncML.Enum;
 using SamsungFumoClient.Utils;
 
 namespace SamsungFumoClient
@@ -53,7 +52,7 @@ namespace SamsungFumoClient
         {
             if (IsAborted)
             {
-                throw new Exception("Refusing to send message. The server has already aborted the session.");
+                throw new TransactionAbortedException();
             }
 
             if (_isAlreadyRegistered)
@@ -76,7 +75,43 @@ namespace SamsungFumoClient
             return responseDocument;
         }
 
-        public async Task<FirmwareObject?> RetrieveFirmwareObject(string descriptorUri)
+        public async Task AbortSessionAsync()
+        {
+            if (IsAborted)
+            {
+                Log.I("DmSession.AbortSessionAsync: Session already aborted");
+                return;
+            }
+            
+            var syncMlWriter = new SyncMlWriter();
+            syncMlWriter.BeginDocument();
+            syncMlWriter.WriteSyncHdr(BuildHeader());
+            syncMlWriter.WriteSyncBody(new SyncBody()
+            {
+                Cmds = new[]
+                {
+                    new Alert()
+                    {
+                        CmdID = 1,
+                        Data = AlertTypes.SESSION_ABORT
+                    }
+                }
+            });
+            syncMlWriter.EndDocument();
+            try
+            {
+                await _client.SendWbxmlAsync(ServerUrl, syncMlWriter.GetBytes());
+                Log.I("DmSession.AbortSessionAsync: Session abort has been sent");
+            }
+            catch (HttpException ex)
+            {
+                Log.E("DmSession.AbortSessionAsync: Failed due to HTTP error " + ex);
+            }
+
+            IsAborted = true;
+        }
+
+        public async Task<FirmwareObject?> RetrieveFirmwareObjectAsync(string descriptorUri)
         {
             var xml = await _client.GetDownloadDescriptorAsync(descriptorUri);
             if (xml == null)

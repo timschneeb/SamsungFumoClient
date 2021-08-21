@@ -150,17 +150,18 @@ namespace DemoClient
             var descriptorUri = SyncMlUtils.FindFirmwareUpdateUri(firmwareUpdateResult);
             if (descriptorUri == null)
             {
-                Log.E("The server did not include a download descriptor with its response. Cannot continue.");
+                Log.E("The server did not include a download descriptor uri with its response. Cannot continue.");
                 return;
             }
-            var firmware = await session.RetrieveFirmwareObject(descriptorUri);
+            var firmware = await session.RetrieveFirmwareObjectAsync(descriptorUri);
             if (firmware == null)
             {
                 Log.E("Download descriptor cannot be downloaded or is unreadable. Cannot continue.");
                 return;
             }
-            Log.I("=======> Firmware found: " + firmware.Version?.ApplicationProcessor);
+            Log.I($"=======> Firmware found: {firmware.Version?.ApplicationProcessor}");
 
+            await session.AbortSessionAsync();
         }
     }
 }
