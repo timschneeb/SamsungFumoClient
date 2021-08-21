@@ -187,7 +187,7 @@ namespace SamsungFumoClient.Secure
 
                     string cred = ComputeMd5Credentials(clientId, clientPassword, nextNonce);
                     Log.D(
-                        $"CryptUtils.MakeDigest: Generated credentials using CRED_TYPE_MD5: {cred} (Nonce='{nextNonce}')");
+                        $"CryptUtils.MakeDigest: Generated credentials using CRED_TYPE_MD5: {cred} (Nonce='{Base64.Encode(nextNonce)}')");
                     return cred;
                 }
                 case AuthTypes.Hmac:
