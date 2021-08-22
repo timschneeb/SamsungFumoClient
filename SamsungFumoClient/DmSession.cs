@@ -79,7 +79,7 @@ namespace SamsungFumoClient
         {
             if (IsAborted)
             {
-                Log.D("DmSession.AbortSessionAsync: Session already aborted");
+                Log.W("DmSession.AbortSessionAsync: Session already aborted");
                 return;
             }
             
@@ -101,7 +101,7 @@ namespace SamsungFumoClient
             try
             {
                 await _client.SendWbxmlAsync(ServerUrl, syncMlWriter.GetBytes());
-                Log.I("DmSession.AbortSessionAsync: Session abort has been sent");
+                Log.D("DmSession.AbortSessionAsync: Session abort has been sent");
             }
             catch (HttpException ex)
             {
