@@ -79,7 +79,7 @@ namespace SamsungFumoClient
         {
             if (IsAborted)
             {
-                Log.I("DmSession.AbortSessionAsync: Session already aborted");
+                Log.D("DmSession.AbortSessionAsync: Session already aborted");
                 return;
             }
             
