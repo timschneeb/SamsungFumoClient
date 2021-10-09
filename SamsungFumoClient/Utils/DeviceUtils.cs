@@ -10,7 +10,7 @@ namespace SamsungFumoClient.Utils
         public const string DefaultLanguageCode = "en-US";
         public const string DefaultFotaVersion = "3.0.21072951";
 
-        private static readonly string[] KnownGeneralBudsCustomerCodes =
+        public static readonly string[] KnownGeneralBudsCustomerCodes =
         {
             "ZTO",
             "XAC",
@@ -40,14 +40,14 @@ namespace SamsungFumoClient.Utils
             "XJP",
         };
 
-        private static readonly string[] KnownBudsLiveCustomerCodes =
+        public static readonly string[] KnownBudsLiveCustomerCodes =
         {
             "CAC",
             "KTC",
             "SER"
         };
 
-        private static readonly string[] KnownBudsProCustomerCodes =
+        public static readonly string[] KnownBudsProCustomerCodes =
         {
             "EUD",
             "CIS"
@@ -138,9 +138,9 @@ namespace SamsungFumoClient.Utils
             "2",
         };
 
-        public static string GenerateDeviceId()
+        public static string GenerateDeviceId(bool withPrefix = true)
         {
-            return $"TWID:{GenerateMacAddress().Replace(":", "")}";
+            return $"{(withPrefix ? "TWID:" : "")}{GenerateMacAddress().Replace(":", "")}";
         }
 
         public static string GenerateMacAddress()

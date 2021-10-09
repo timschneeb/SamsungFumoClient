@@ -48,13 +48,14 @@ namespace SamsungFumoClient.Network
             Log.V(">>> OspHttpClient.SendFumoRegisterAsync(device) ==========");
             Log.V(request);
 
+            var uri = "https://www.ospserver.net/device/fumo/device/";
             var httpRequestMessage =
-                new HttpRequestMessage(HttpMethod.Post, "https://www.ospserver.net/device/fumo/device/");
-            var oauth = OAuthUtils.GenerateOAuthHeader(
+                new HttpRequestMessage(HttpMethod.Post, CorsProxy.Handle(uri));
+            var oauth = await OAuthUtils.GenerateOAuthHeader(
                 "dz7680f4t7",
                 "4BE4F2C346C6F8831A480E14FD4DE276",
                 httpRequestMessage.Method.Method.ToUpperInvariant(),
-                httpRequestMessage!.RequestUri!.OriginalString,
+                uri,
                 request
             );
 
@@ -114,7 +115,7 @@ namespace SamsungFumoClient.Network
                 Log.V(parser.WriteXmlString(wbxml));
             }
 #endif
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, CorsProxy.Handle(uri));
             httpRequestMessage.Headers.TryAddWithoutValidation("User-Agent",
                 $"Samsung {Device?.Model} SyncML_DM Client");
             httpRequestMessage.Headers.Add("Accept", "application/vnd.syncml.dm+wbxml");
@@ -147,7 +148,7 @@ namespace SamsungFumoClient.Network
             Log.V(">>> OspHttpClient.GetDownloadDescriptorAsync(uri) ==========");
             Log.V(uri);
 
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, CorsProxy.Handle(uri));
             httpRequestMessage.Headers.Add("Accept", "application/vnd.oma.dd+xml");
             httpRequestMessage.Headers.TryAddWithoutValidation("User-Agent",
                 $"Samsung {Device?.Model} SyncML_DM Client");

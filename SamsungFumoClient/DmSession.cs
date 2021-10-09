@@ -16,7 +16,7 @@ namespace SamsungFumoClient
     {
         private readonly OspHttpClient _client = new();
 
-        private bool _isAlreadyRegistered = true;
+        private bool _isNotRegistered = true;
         private SyncDocument? _lastResponse;
         private byte[] _serverNonce = Array.Empty<byte>();
 
@@ -29,12 +29,19 @@ namespace SamsungFumoClient
             ServerId = serverId;
             ServerPassword = serverPassword;
             ServerUrl = serverUrl;
+            ClientPassword = string.Empty;
             ClientName = device.DeviceId;
-            ClientPassword = CryptUtils.GenerateClientPassword(ClientName, serverId) ?? string.Empty;
             SessionId = DateTime.Now.Minute.ToString("X") + DateTime.Now.Second.ToString("X");
 
             _client.Device = device;
-            _isAlreadyRegistered = register;
+            _isNotRegistered = register;
+            
+            PostInit();
+        }
+
+        private async void PostInit()
+        {
+            ClientPassword = await CryptUtils.GenerateClientPassword(ClientName, ServerId) ?? string.Empty;
         }
 
         public string SessionId { get; }
@@ -43,11 +50,20 @@ namespace SamsungFumoClient
 
         public Device Device { get; }
         public string ClientName { get; }
-        public string ClientPassword { get; }
+        public string ClientPassword { private set; get; }
         public string ServerId { get; }
         public string ServerPassword { get; }
         public string ServerUrl { private set; get; }
 
+        public async Task SendFumoRegisterAsync()
+        {
+            if (_isNotRegistered)
+            {
+                _isNotRegistered = false;
+                await _client.SendFumoRegisterAsync(Device);
+            }
+        }
+        
         public async Task<SyncDocument> SendAsync(SyncBody body)
         {
             if (IsAborted)
@@ -55,15 +71,15 @@ namespace SamsungFumoClient
                 throw new TransactionAbortedException();
             }
 
-            if (_isAlreadyRegistered)
+            if (_isNotRegistered)
             {
-                _isAlreadyRegistered = false;
+                _isNotRegistered = false;
                 await _client.SendFumoRegisterAsync(Device);
             }
 
             var syncMlWriter = new SyncMlWriter();
             syncMlWriter.BeginDocument();
-            syncMlWriter.WriteSyncHdr(BuildHeader());
+            syncMlWriter.WriteSyncHdr(await BuildHeader());
             syncMlWriter.WriteSyncBody(body);
             syncMlWriter.EndDocument();
 
@@ -85,7 +101,7 @@ namespace SamsungFumoClient
             
             var syncMlWriter = new SyncMlWriter();
             syncMlWriter.BeginDocument();
-            syncMlWriter.WriteSyncHdr(BuildHeader());
+            syncMlWriter.WriteSyncHdr(await BuildHeader());
             syncMlWriter.WriteSyncBody(new SyncBody()
             {
                 Cmds = new[]
@@ -285,7 +301,7 @@ namespace SamsungFumoClient
             CurrentMessageId++;
         }
 
-        private SyncHdr BuildHeader()
+        private async Task<SyncHdr> BuildHeader()
         {
             Cred? cred = null;
             if (_lastResponse == null || !SyncMlUtils.IsAuthorizationAccepted(_lastResponse?.SyncBody?.Cmds))
@@ -297,7 +313,7 @@ namespace SamsungFumoClient
                         Format = "b64",
                         Type = "syncml:auth-md5"
                     },
-                    Data = GenerateAuthDigest()
+                    Data = await GenerateAuthDigest()
                 };
             }
 
@@ -323,10 +339,10 @@ namespace SamsungFumoClient
             };
         }
 
-        private string? GenerateAuthDigest()
+        private async Task<string?> GenerateAuthDigest()
         {
             var nextNonce = NextNonce();
-            return CryptUtils.MakeDigest(AuthTypes.Md5, ClientName, ClientPassword,
+            return await CryptUtils.MakeDigest(AuthTypes.Md5, ClientName, ClientPassword,
                 nextNonce, null);
         }
 

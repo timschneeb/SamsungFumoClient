@@ -30,15 +30,15 @@ namespace SamsungFumoClient
         public string Model { init; get; }
         public string CustomerCode { init; get; }
 
-        public string FirmwareVersion
+        public string? FirmwareVersion
         {
             init => _firmwareVersion = value;
             get
             {
-                if (_firmwareVersion == null)
+                if (_firmwareVersion is not { Length: > 0 })
                 {
                     Log.I(
-                        "Device.AsDevDetailNodes: firmwareVersion is null. Automatically determining firmware version by checking online...");
+                        "Device.AsDevDetailNodes: firmwareVersion is null or empty. Automatically determining firmware version by checking online...");
                     RandomizeFirmwareVersion();
                 }
 
