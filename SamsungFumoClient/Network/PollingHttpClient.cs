@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Xml;
+using SamsungFumoClient.Exceptions;
 using SamsungFumoClient.Utils;
 
 namespace SamsungFumoClient.Network
@@ -29,7 +28,7 @@ namespace SamsungFumoClient.Network
             if (!result.IsSuccessStatusCode)
             {
                 Log.E(result.ToString());
-                throw new NetworkInformationException((int) result.StatusCode);
+                throw new HttpException((int) result.StatusCode);
             }
 
             var doc = new XmlDocument();

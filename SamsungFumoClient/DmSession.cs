@@ -55,13 +55,15 @@ namespace SamsungFumoClient
         public string ServerPassword { get; }
         public string ServerUrl { private set; get; }
 
-        public async Task SendFumoRegisterAsync()
+        public async Task<bool> SendFumoRegisterAsync()
         {
             if (_isNotRegistered)
             {
                 _isNotRegistered = false;
-                await _client.SendFumoRegisterAsync(Device);
+                return await _client.SendFumoRegisterAsync(Device);
             }
+
+            return true;
         }
         
         public async Task<SyncDocument> SendAsync(SyncBody body)
