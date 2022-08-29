@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
+using SamsungFumoClient.Utils.Crypto;
 
 namespace SamsungFumoClient.Secure
 {
     public static class OAuthUtils
     {
-        public static string GenerateOAuthHeader(string appId, string appSecret, string requestMethod,
+        public static async Task<string> GenerateOAuthHeader(string appId, string appSecret, string requestMethod,
             string requestUri, string requestBody, long? timestamp = null)
         {
             if (timestamp == null)
@@ -20,9 +21,9 @@ namespace SamsungFumoClient.Secure
             oauth.Add("oauth_consumer_key", appId);
             oauth.Add("oauth_nonce", CryptUtils.GenerateRandomToken(10));
             oauth.Add("oauth_signature_method", "HmacSHA1");
-            oauth.Add("oauth_timestamp", timestamp.ToString()!);
+            oauth.Add("oauth_timestamp", timestamp.ToString() ?? string.Empty);
             oauth.Add("oauth_version", "1.0");
-            oauth.Add("oauth_signature", GenerateSignature(appSecret, requestMethod, requestUri, requestBody, oauth));
+            oauth.Add("oauth_signature", await GenerateSignature(appSecret, requestMethod, requestUri, requestBody, oauth));
 
             var sb = new StringBuilder();
             foreach (var (key, value) in oauth)
@@ -38,7 +39,7 @@ namespace SamsungFumoClient.Secure
             return (long) DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
         }
 
-        private static string GenerateSignature(string appSecret, string requestMethod, string requestUri,
+        private static async Task<string> GenerateSignature(string appSecret, string requestMethod, string requestUri,
             string requestBody, Dictionary<string, string> oauth)
         {
             var stringBuffer = new StringBuilder();
@@ -53,15 +54,12 @@ namespace SamsungFumoClient.Secure
                 stringBuffer.Append(requestBody);
             }
 
-            return Convert.ToBase64String(ComputeSignature(appSecret, stringBuffer.ToString()));
+            return Convert.ToBase64String(await ComputeSignature(appSecret, stringBuffer.ToString()));
         }
 
-        private static byte[] ComputeSignature(string appSecret, string str2)
+        private static async Task<byte[]> ComputeSignature(string appSecret, string str2)
         {
-            var hmac = new HMACSHA1(Encoding.UTF8.GetBytes(appSecret));
-            byte[] byteArray = Encoding.ASCII.GetBytes(str2);
-            var stream = new MemoryStream(byteArray);
-            return hmac.ComputeHash(stream);
+            return await CryptoProvider.Instance.HmacSha1ComputeHashAsync(appSecret, Encoding.ASCII.GetBytes(str2));
         }
 
         private static string NormalizeUrlWithOAuthSpec(string str)

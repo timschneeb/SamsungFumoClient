@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using System.Xml;
+using SamsungFumoClient.Exceptions;
 using SamsungFumoClient.Utils;
 
 namespace SamsungFumoClient.Network
@@ -14,9 +15,9 @@ namespace SamsungFumoClient.Network
         public static async Task<string[]> FindOldVersionsAsync(string model, string customerCode)
         {
             Log.V($">>> PollingHttpClient.FindOldVersionAsync(\"{model}\",\"{customerCode}\") ==========");
-
+            
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get,
-                $"https://fota-cloud-dn.ospserver.net/firmware/{customerCode.ToUpperInvariant()}/{model.ToUpperInvariant()}/version.xml");
+                CorsProxy.Handle($"https://fota-cloud-dn.ospserver.net/firmware/{customerCode.ToUpperInvariant()}/{model.ToUpperInvariant()}/version.xml"));
             httpRequestMessage.Headers.Add("Accept", "text/xml");
             var result = await _client.SendAsync(httpRequestMessage);
 
@@ -27,7 +28,7 @@ namespace SamsungFumoClient.Network
             if (!result.IsSuccessStatusCode)
             {
                 Log.E(result.ToString());
-                throw new NetworkInformationException((int) result.StatusCode);
+                throw new HttpException((int) result.StatusCode);
             }
 
             var doc = new XmlDocument();
