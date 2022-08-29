@@ -1,13 +1,13 @@
 ﻿using System.Net;
 using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using SamsungFumoClient.Exceptions;
 using SamsungFumoClient.Secure;
 using SamsungFumoClient.Utils;
+#if HasWbXml2
 using ThePBone.WbXml2;
+#endif
 
 namespace SamsungFumoClient.Network
 {
