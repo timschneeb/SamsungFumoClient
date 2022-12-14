@@ -67,20 +67,21 @@ namespace SamsungFumoClient
             };
         }
 
-        public (string, string)[] AsDevDetailNodes(string? firmwareVersion = null)
+        public async Task<(string, string)[]> AsDevDetailNodes(string? firmwareVersion = null)
         {
             firmwareVersion ??= FirmwareVersion;
             
-            if (_firmwareVersion is not { Length: > 0 })
+            if (firmwareVersion == null && FirmwareVersion is not { Length: > 0 })
             {
                 Log.I(
                     "Device.AsDevDetailNodes: firmwareVersion is null or empty. Automatically determining firmware version by checking online...");
-                RandomizeFirmwareVersion();
+                await RandomizeFirmwareVersion();
+                firmwareVersion = FirmwareVersion;
             }
 
             return new[]
             {
-                ("./DevDetail/FwV", firmwareVersion),
+                ("./DevDetail/FwV", firmwareVersion ?? "???"),
             };
         }
 
