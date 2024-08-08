@@ -15,7 +15,7 @@ namespace SamsungFumoClient.Network
 {
     public class OspHttpClient
     {
-        private readonly HttpClient _client = new(new HttpClientHandler { SslProtocols = SslProtocols.Tls13, });
+        private readonly HttpClient _client = new(new HttpClientHandler());
         public Device? Device { set; get; }
 
         public async Task<bool> SendFumoRegisterAsync(Device device)

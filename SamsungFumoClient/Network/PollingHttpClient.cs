@@ -11,7 +11,7 @@ namespace SamsungFumoClient.Network
 {
     public static class PollingHttpClient
     {
-        private static readonly HttpClient _client = new(new HttpClientHandler { SslProtocols = SslProtocols.Tls13 });
+        private static readonly HttpClient _client = new(new HttpClientHandler());
 
         public static async Task<string[]> FindOldVersionsAsync(string model, string customerCode)
         {
