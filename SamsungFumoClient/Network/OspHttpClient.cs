@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 using SamsungFumoClient.Exceptions;
@@ -14,7 +15,7 @@ namespace SamsungFumoClient.Network
 {
     public class OspHttpClient
     {
-        private readonly HttpClient _client = new();
+        private readonly HttpClient _client = new(new HttpClientHandler { SslProtocols = SslProtocols.Tls13, });
         public Device? Device { set; get; }
 
         public async Task<bool> SendFumoRegisterAsync(Device device)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using System.Xml;
 using SamsungFumoClient.Exceptions;
@@ -10,7 +11,7 @@ namespace SamsungFumoClient.Network
 {
     public static class PollingHttpClient
     {
-        private static readonly HttpClient _client = new();
+        private static readonly HttpClient _client = new(new HttpClientHandler { SslProtocols = SslProtocols.Tls13 });
 
         public static async Task<string[]> FindOldVersionsAsync(string model, string customerCode)
         {
