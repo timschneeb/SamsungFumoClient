@@ -3,6 +3,14 @@ Advanced OMA-DM client NET Core library with FUMO capabilities designed for retr
 
 ## Usage
 
+Important: Samsung's OMA-DM server uses insecure SSL legacy renegotiation, which is disabled on OSes with OpenSSL 3.0 or later.
+To work around this issue, you can override the OpenSSL configuration using the `openssl.custom` file in this repo:
+```
+OPENSSL_CONF=openssl.custom ./DemoClient
+```
+
+```csharp
+
 Check the `DemoClient` project for detailed information on how to use this OMA-DM client to scrape Samsung firmware binaries.
 
 ## Web application
