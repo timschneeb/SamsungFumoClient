@@ -19,7 +19,6 @@ namespace DemoClient
                 Model = "SM-R510",
                 CustomerCode = "KOO",
                 DeviceId = "IMEI:350505560006797",
-                SerialNumber = "R3CX80V0QZJ",
             };
 
             var session = new DmSession(device);
